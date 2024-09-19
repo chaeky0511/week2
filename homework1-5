@@ -1,0 +1,16 @@
+import Adafruit_DHT  # DHT sensor library
+import time
+
+SENSOR = Adafruit_DHT.DHT11  # Select DHT11 sensor (change to DHT22 if using that)
+DHT_PIN = 4  # Pin number where the temperature and humidity sensor is connected
+
+try:
+    while True:
+        humidity, temperature = Adafruit_DHT.read_retry(SENSOR, DHT_PIN)  # Read humidity and temperature
+        if humidity is not None and temperature is not None:  # If both humidity and temperature are read successfully
+            print(f"Temperature: {temperature:.1f}°C, Humidity: {humidity:.1f}%")  # Print results
+        else:  # If unable to read from the sensor
+            print("Unable to read data from sensor.")  # Print error message
+        time.sleep(1)  # Check every 1 second
+except KeyboardInterrupt:
+    pass  # Exit the loop when a keyboard interrupt occurs
