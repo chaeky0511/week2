@@ -11,6 +11,9 @@ TRIG_PIN = 24  # Ultrasonic sensor TRIG (GPIO 24, physical pin 18)
 ECHO_PIN = 25  # Ultrasonic sensor ECHO (GPIO 25, physical pin 22)
 DHT_PIN = 4  # DHT temperature/humidity sensor (GPIO 4, physical pin 7)
 
+# Disable GPIO warnings
+GPIO.setwarnings(False)
+
 # GPIO setup
 GPIO.setmode(GPIO.BCM)
 GPIO.setup([LED_GREEN, LED_YELLOW, LED_RED], GPIO.OUT)  # Set LED pins as output
@@ -42,43 +45,55 @@ def measure_distance():
 
 # System active state variable
 system_active = False
+last_touch_time = 0  # To store the last time the touch sensor was pressed
 
 try:
     while True:
+        current_time = time.time()
+
         # Check touch sensor input to toggle system activation state
-        if GPIO.input(TOUCH_PIN) == GPIO.HIGH:  # Touch detected
+        if GPIO.input(TOUCH_PIN) == GPIO.HIGH and current_time - last_touch_time > 1:  # Debounce for 1 second
+            last_touch_time = current_time  # Update last touch time
             if not system_active:  # Activate system if it was inactive
                 system_active = True
-                print("System activated.")
+                print("System activated. Starting operation...")
             else:  # Deactivate system if it was active
                 system_active = False
-                print("System deactivated.")
+                print("System deactivated. Stopping operation...")
                 GPIO.output([LED_GREEN, LED_YELLOW, LED_RED], GPIO.LOW)  # Turn off all LEDs
-            continue
         
         if system_active:  # Only operate when the system is active
             # Measure temperature/humidity and distance
             humidity, temperature = Adafruit_DHT.read_retry(SENSOR, DHT_PIN)
             distance = measure_distance()
             
-            # Print the measured results
-            print(f"Temperature: {temperature:.1f}°C, Humidity: {humidity:.1f}%")
+            # Check if data from sensor is valid
+            if humidity is not None and temperature is not None:
+                print(f"Temperature: {temperature:.1f}°C, Humidity: {humidity:.1f}%")
+            else:
+                print("Failed to retrieve data from temperature/humidity sensor.")
+            
             print(f"Distance: {distance:.1f} cm")
             
-            # Control LED state based on distance
+            # Control LED state and output messages based on distance
             if distance > 20:
                 GPIO.output(LED_GREEN, GPIO.HIGH)  # Turn on green LED (distance > 20 cm)
                 GPIO.output([LED_YELLOW, LED_RED], GPIO.LOW)  # Turn off other LEDs
+                print("Distance is more than 20 cm.")
             elif 10 < distance <= 20:
                 GPIO.output(LED_YELLOW, GPIO.HIGH)  # Turn on yellow LED (10 cm < distance <= 20 cm)
                 GPIO.output([LED_GREEN, LED_RED], GPIO.LOW)  # Turn off other LEDs
+                print("Distance is between 10 and 20 cm.")
             elif 0 < distance <= 10:
                 GPIO.output(LED_RED, GPIO.HIGH)  # Turn on red LED (distance <= 10 cm)
                 GPIO.output([LED_GREEN, LED_YELLOW], GPIO.LOW)  # Turn off other LEDs
-            time.sleep(1)  # Wait 1 second (before the next measurement cycle)
+                print("Distance is less than 10 cm. Too close!")
+            
+            time.sleep(1)  # Wait 1 second before next measurement
 
 except KeyboardInterrupt:
     pass  # Exit the loop when the program is interrupted
 
 finally:
+    print("Exiting the program. Cleaning up GPIO settings.")
     GPIO.cleanup()  # Reset GPIO settings on exit
