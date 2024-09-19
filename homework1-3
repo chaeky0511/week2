@@ -1,0 +1,39 @@
+import RPi.GPIO as GPIO
+import time
+
+TRIG_PIN = 23  # Ultrasonic trigger pin
+ECHO_PIN = 24  # Ultrasonic echo pin
+
+# GPIO setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(TRIG_PIN, GPIO.OUT)  # Set TRIG pin as output
+GPIO.setup(ECHO_PIN, GPIO.IN)  # Set ECHO pin as input
+
+def measure_distance():
+    # Generate ultrasonic trigger signal (HIGH for 10µs)
+    GPIO.output(TRIG_PIN, GPIO.HIGH)
+    time.sleep(0.00001)  # Wait for 10 microseconds
+    GPIO.output(TRIG_PIN, GPIO.LOW)
+    
+    # Measure the time it takes for the ECHO pin to switch from LOW to HIGH
+    while GPIO.input(ECHO_PIN) == GPIO.LOW:
+        start_time = time.time()  # Record time when signal is LOW
+        
+    while GPIO.input(ECHO_PIN) == GPIO.HIGH:
+        end_time = time.time()  # Record time when signal is HIGH
+    
+    # Calculate the time interval and compute the distance (distance = time * speed / 2)
+    duration = end_time - start_time
+    distance = duration * 17150  # Speed of sound is approximately 343 m/s, distance = time * 17150 (cm)
+    
+    return distance
+
+try:
+    while True:
+        dist = measure_distance()  # Measure distance
+        print(f"Obstacle detected at {dist:.1f} cm.")  # Print result
+        time.sleep(1)  # Wait for 1 second
+except KeyboardInterrupt:
+    pass  # Exit the loop when a keyboard interrupt occurs
+finally:
+    GPIO.cleanup()  # Reset GPIO settings on program exit
