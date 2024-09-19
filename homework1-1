@@ -1,0 +1,21 @@
+import RPi.GPIO as GPIO
+import time
+
+LED_PIN = 18  # Set GPIO pin number
+
+# GPIO setup (BCM mode: using GPIO numbers)
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(LED_PIN, GPIO.OUT, initial=GPIO.LOW)  # Set LED pin as output, initially set to LOW
+
+try:
+    while True:
+        GPIO.output(LED_PIN, GPIO.HIGH)  # Turn LED on
+        print("LED On")
+        time.sleep(1)  # Wait for 1 second
+        GPIO.output(LED_PIN, GPIO.LOW)  # Turn LED off
+        print("LED Off")
+        time.sleep(1)  # Wait for 1 second
+except KeyboardInterrupt:
+    pass  # Exit the loop when a keyboard interrupt occurs
+finally:
+    GPIO.cleanup()  # Reset GPIO settings when the program ends
